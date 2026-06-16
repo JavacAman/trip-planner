@@ -4,8 +4,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -22,9 +26,13 @@ import java.util.Map;
 
 // SOLID-SRP: Handles only Redis/cache infrastructure configuration
 // Pattern-Singleton: All @Bean methods produce application-scoped singletons
+// Implements CachingConfigurer to install a CacheErrorHandler: Redis being down/misconfigured
+// must never fail a real business operation. Without this, a successful trip creation that's
+// already committed to MySQL would still 500 if the post-success @CacheEvict can't reach Redis.
 @Configuration
 @EnableCaching
-public class RedisConfig {
+@Slf4j
+public class RedisConfig implements CachingConfigurer {
 
     public static final String ITINERARY_CACHE = "itinerary_cache";
     public static final String HOTEL_CACHE = "hotel_cache";
@@ -43,6 +51,35 @@ public class RedisConfig {
                 JsonTypeInfo.As.PROPERTY
         );
         return mapper;
+    }
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new CacheErrorHandler() {
+            @Override
+            public void handleCacheGetError(RuntimeException ex, Cache cache, Object key) {
+                log.warn("Redis cache GET failed for cache '{}', key '{}' — continuing without cache: {}",
+                        cache.getName(), key, ex.getMessage());
+            }
+
+            @Override
+            public void handleCachePutError(RuntimeException ex, Cache cache, Object key, Object value) {
+                log.warn("Redis cache PUT failed for cache '{}', key '{}' — continuing without cache: {}",
+                        cache.getName(), key, ex.getMessage());
+            }
+
+            @Override
+            public void handleCacheEvictError(RuntimeException ex, Cache cache, Object key) {
+                log.warn("Redis cache EVICT failed for cache '{}', key '{}' — continuing without cache: {}",
+                        cache.getName(), key, ex.getMessage());
+            }
+
+            @Override
+            public void handleCacheClearError(RuntimeException ex, Cache cache) {
+                log.warn("Redis cache CLEAR failed for cache '{}' — continuing without cache: {}",
+                        cache.getName(), ex.getMessage());
+            }
+        };
     }
 
     @Bean
