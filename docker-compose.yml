@@ -1,0 +1,87 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: trip_planner_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: trip_planner
+      MYSQL_USER: ${MYSQL_USER:-tripuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-trippassword}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - trip_planner_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: trip_planner_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - trip_planner_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trip_planner_backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:mysql://mysql:3306/trip_planner?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DATABASE_USERNAME: ${MYSQL_USER:-tripuser}
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD:-trippassword}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: 86400000
+      GROK_API_KEY: ${GROK_API_KEY}
+      APP_GROK_MODEL: llama-3.3-70b-versatile
+      CORS_ORIGINS: http://localhost:4200,http://frontend
+    ports:
+      - "8080:8080"
+    networks:
+      - trip_planner_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trip_planner_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - trip_planner_net
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  trip_planner_net:
+    driver: bridge
