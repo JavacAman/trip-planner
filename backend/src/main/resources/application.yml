@@ -82,6 +82,9 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  health:
+    redis:
+      enabled: false
 
 logging:
   level:
