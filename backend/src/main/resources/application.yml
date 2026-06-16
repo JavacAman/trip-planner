@@ -31,6 +31,10 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
+      # Upstash (and most managed Redis providers) require TLS — local docker-compose
+      # Redis does not, so this defaults off and must be opted into via env var.
+      ssl:
+        enabled: ${REDIS_SSL:false}
       lettuce:
         pool:
           max-active: 8
