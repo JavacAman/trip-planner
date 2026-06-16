@@ -27,5 +27,10 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD wget -qO- http://localhost:8080/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", \
+# Conservative memory tuning for small-memory hosting plans (e.g. Railway free/hobby tier):
+# heap capped at 50% of the container limit (not 75%) leaves headroom for metaspace,
+# thread stacks, and native buffers (Netty/Lettuce, Tomcat NIO) that live off-heap —
+# without this, the container gets OOM-killed by the host under modest load.
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=50.0", \
+            "-XX:MaxMetaspaceSize=128m", "-Xss512k", \
             "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

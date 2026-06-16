@@ -7,12 +7,15 @@ spring:
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:password}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # Pool sized small deliberately — this runs on a memory-constrained hosting tier
+    # (each Hikari connection plus its buffers carries real overhead per-connection)
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
+      maximum-pool-size: 5
+      minimum-idle: 1
       connection-timeout: 30000
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -37,8 +40,8 @@ spring:
         enabled: ${REDIS_SSL:false}
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
+          max-active: 4
+          max-idle: 4
           min-idle: 0
 
   jackson:
@@ -52,6 +55,12 @@ server:
   error:
     include-message: always
     include-binding-errors: always
+  # Tomcat's default of 200 max threads massively over-provisions for a low-traffic
+  # demo and each thread reserves its own stack — keep this small on a tight memory budget.
+  tomcat:
+    threads:
+      max: 20
+      min-spare: 5
 
 app:
   jwt:
