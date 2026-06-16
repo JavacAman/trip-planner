@@ -156,8 +156,13 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
+        # Run from repo root, not ./backend — the Railway service's "Root Directory"
+        # setting is "backend", so it expects the uploaded snapshot to contain a
+        # backend/ subfolder. Running this from inside ./backend would upload that
+        # folder's contents as the snapshot root, leaving no backend/ subfolder for
+        # Railway's Root Directory setting to find (causing a "no such file or
+        # directory" build failure).
         run: railway up --service trip-planner --detach
-        working-directory: ./backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
