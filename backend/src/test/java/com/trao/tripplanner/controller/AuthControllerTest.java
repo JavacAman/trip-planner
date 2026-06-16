@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trao.tripplanner.dto.request.LoginRequest;
 import com.trao.tripplanner.dto.request.RegisterRequest;
 import com.trao.tripplanner.dto.response.AuthResponse;
+import com.trao.tripplanner.config.SecurityConfig;
 import com.trao.tripplanner.exception.EmailAlreadyExistsException;
-import com.trao.tripplanner.security.JwtAuthenticationFilter;
 import com.trao.tripplanner.security.JwtTokenProvider;
 import com.trao.tripplanner.service.AuthService;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@Import(SecurityConfig.class)
 @DisplayName("AuthController Integration Tests")
 class AuthControllerTest {
 
@@ -30,8 +32,10 @@ class AuthControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean AuthService authService;
+    // JwtTokenProvider/UserDetailsService are mocked so the real JwtAuthenticationFilter (wired in via
+    // @Import(SecurityConfig.class)) can be constructed and simply pass through requests with no token —
+    // mocking JwtAuthenticationFilter itself would short-circuit the filter chain (its doFilter would no-op).
     @MockBean JwtTokenProvider jwtTokenProvider;
-    @MockBean JwtAuthenticationFilter jwtAuthenticationFilter;
     @MockBean UserDetailsService userDetailsService;
 
     private final AuthResponse sampleResponse = AuthResponse.builder()

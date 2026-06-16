@@ -18,8 +18,10 @@ class GrokAiServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Points at a non-routable local port (nothing listens here) so the connection fails
+        // immediately and deterministically — this test must never depend on a live AI API.
         grokAiService = new GrokAiService(
-                "https://api.x.ai/v1",
+                "http://localhost:1",
                 "test-api-key",
                 new ObjectMapper()
         );
@@ -27,7 +29,7 @@ class GrokAiServiceTest {
         try {
             var modelField = GrokAiService.class.getDeclaredField("model");
             modelField.setAccessible(true);
-            modelField.set(grokAiService, "grok-beta");
+            modelField.set(grokAiService, "llama-3.3-70b-versatile");
 
             var maxTokensField = GrokAiService.class.getDeclaredField("maxTokens");
             maxTokensField.setAccessible(true);
@@ -38,10 +40,8 @@ class GrokAiServiceTest {
     }
 
     @Test
-    @DisplayName("generateContent: throws AiServiceException when API returns HTTP error")
-    void generateContent_networkError_throwsAiServiceException() {
-        // WebClient will fail immediately because "test-api-key" is invalid
-        // but we verify the exception type is correct
+    @DisplayName("generateContent: throws AiServiceException when the API call fails")
+    void generateContent_connectionFailure_throwsAiServiceException() {
         assertThatThrownBy(() -> grokAiService.generateContent("test prompt"))
                 .isInstanceOf(AiServiceException.class);
     }
