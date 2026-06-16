@@ -1,6 +1,8 @@
 # TripPlanner AI
 
-An AI-powered travel itinerary generator built as a full-stack assessment project. Users submit a destination, trip duration, budget, and interests; the Grok (xAI) LLM generates a complete day-by-day itinerary, budget estimate, and hotel suggestions in seconds.
+An AI-powered travel itinerary generator built as a full-stack assessment project. Users submit a destination, trip duration, budget, and interests; an LLM hosted on Groq generates a complete day-by-day itinerary, budget estimate, and hotel suggestions in seconds.
+
+**Live demo**: Frontend → [dapper-shortbread-f0ad2e.netlify.app](https://dapper-shortbread-f0ad2e.netlify.app) · Backend API → [trip-planner-production-bc80.up.railway.app](https://trip-planner-production-bc80.up.railway.app)
 
 ---
 
@@ -11,7 +13,7 @@ An AI-powered travel itinerary generator built as a full-stack assessment projec
 | Backend | Java 17 + Spring Boot 3.2 | Strong typing, mature ecosystem, Spring Security handles auth seamlessly |
 | Database | MySQL 8 + Spring Data JPA | ACID-compliant relational DB; trip data has clear relational structure |
 | Cache | Redis | Expensive AI calls are cached (6h TTL for itineraries) to cut latency and API costs |
-| AI | Grok API (xAI) | Instruction-following quality, JSON-mode reliability, competitive pricing |
+| AI | Groq API (Llama 3.3 70B) | Free tier with generous limits, OpenAI-compatible API, very low inference latency |
 | Frontend | Angular 17 (standalone) | Reactive forms, built-in DI, HTTP interceptors — production-ready without extra libraries |
 | Styling | Tailwind CSS | Utility-first, fast iteration, zero unused CSS in prod build |
 | DevOps | Docker + GitHub Actions | Reproducible builds; automated test → build → deploy pipeline |
@@ -54,13 +56,13 @@ trao/
 - Java 17+, Maven 3.9+
 - Node 20+, npm
 - Docker & Docker Compose
-- A Grok API key from [console.x.ai](https://console.x.ai)
+- A Groq API key from [console.groq.com/keys](https://console.groq.com/keys)
 
 ### 1. Clone & configure
 
 ```bash
-git clone https://github.com/your-username/trip-planner-ai.git
-cd trip-planner-ai
+git clone https://github.com/JavacAman/trip-planner.git
+cd trip-planner
 cp .env.example .env
 # Edit .env and set GROK_API_KEY and a strong JWT_SECRET
 ```
@@ -115,7 +117,7 @@ Angular SPA  →  JWT Interceptor  →  Spring Backend  →  MySQL
                                            ↓
                                      Redis Cache
                                            ↓
-                                      Grok API (xAI)
+                                      Groq API
 ```
 
 ### Request Lifecycle
