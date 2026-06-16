@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -224,7 +225,11 @@ public class TripService {
                 .destination(trip.getDestination())
                 .numberOfDays(trip.getNumberOfDays())
                 .budgetType(trip.getBudgetType())
-                .interests(trip.getInterests())
+                // Copy into a plain ArrayList (not the lazy Hibernate proxy) — with
+                // spring.jpa.open-in-view disabled, the session is closed by the time
+                // Jackson serializes the response, so the lazy collection must be
+                // materialized here, inside the active transaction.
+                .interests(new ArrayList<>(trip.getInterests()))
                 .itinerary(dayResponses)
                 .estimatedFlightCost(trip.getEstimatedFlightCost())
                 .estimatedAccommodationCost(trip.getEstimatedAccommodationCost())
